@@ -1,33 +1,31 @@
 const puppeteer = require('puppeteer');
-// Or import puppeteer from 'puppeteer-core';
 
-async function qwerty() {
-    // Launch the browser and open a new blank page
-    const browser = await puppeteer.launch();
+const URL = process.argv[2];
+const LOCATION = process.argv[3];
+
+let scrape = async () => {
+    const browser = await puppeteer.launch({headless: false});
     const page = await browser.newPage();
 
-// Navigate the page to a URL.
-    await page.goto('https://www.vprok.ru/product/domik-v-derevne-dom-v-der-moloko-ster-3-2-950g--309202');
+    await page.goto(URL);
 
-// Set screen size.
     await page.setViewport({width: 1080, height: 1024});
+    await page.screenshot({path: 'screenshot.jpg'});
 
-// Type into search box.
-    await page.locator('.devsite-search-field').fill('automate beyond recorder');
-
-// Wait and click on first result.
-    await page.locator('.devsite-result-item-link').click();
-
-// Locate the full title with a unique string.
-    const textSelector = await page
-        .locator('text/Customize and automate')
-        .waitHandle();
+    await page.locator('.Region_region__6OUBn').click();
+    let text = await page.locator('.UiRegionListBase_list__cH0fK').waitHandle();
+    console.log(LOCATION)
+    // .UiRegionListBase_list__cH0fK'
+    let qwerty = await text?.evaluate(el => el.querySelector("li[title=" + LOCATION + "]"));
+    console.log(qwerty);
+    console.log(qwe)
+    // await (await page.$(`[title="${LOCATION}"]`)).click();
+    const textSelector = await page.locator('.Price_price__QzA8L').waitHandle();
     const fullTitle = await textSelector?.evaluate(el => el.textContent);
-
-// Print the full title.
-    console.log('The title of this blog post is "%s".', fullTitle);
+    console.log(fullTitle);
 
     await browser.close();
-}
+};
 
-qwerty().then(r => {})
+scrape().then(() => {
+});
