@@ -12,13 +12,18 @@ let scrape = async () => {
     await page.setViewport({width: 1080, height: 1024});
     await page.screenshot({path: 'screenshot.jpg'});
 
+    await page.waitForSelector('.Region_region__6OUBn');
     await page.locator('.Region_region__6OUBn').click();
-    let text = await page.locator('.UiRegionListBase_list__cH0fK').waitHandle();
-    console.log(LOCATION)
-    // .UiRegionListBase_list__cH0fK'
-    let qwerty = await text?.evaluate(el => el.querySelector("li[title=" + LOCATION + "]"));
-    console.log(qwerty);
-    console.log(qwe)
+    await page.waitForSelector('.UiRegionListBase_list__cH0fK');
+    const locationsElementHandles = await page.$eval('.UiRegionListBase_list__cH0fK', (el, LOCATION) => {
+        el.querySelector("li[title=\"" + LOCATION + "\"]");
+    }, LOCATION);
+    console.log(locationsElementHandles)
+    // locationsElementHandles.
+    // // .UiRegionListBase_list__cH0fK'
+    // let qwerty = await text?.evaluate(el => el.querySelector("li[title=" + LOCATION + "]"));
+    // console.log(qwerty);
+    // console.log(qwe)
     // await (await page.$(`[title="${LOCATION}"]`)).click();
     const textSelector = await page.locator('.Price_price__QzA8L').waitHandle();
     const fullTitle = await textSelector?.evaluate(el => el.textContent);
