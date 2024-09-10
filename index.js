@@ -1,7 +1,12 @@
 const {scrape} = require("./scrape");
-const {mkdir, appendFile, writeFile} = require("node:fs");
+const {
+    appendFileSync,
+    writeFileSync,
+    existsSync,
+    mkdirSync,
+} = require("node:fs");
 
-const PRODUCT_FILE_NAME = "product";
+const PRODUCT_FILE_NAME = "product.txt";
 
 const urls = [
     "https://www.vprok.ru/product/domik-v-derevne-dom-v-der-moloko-ster-3-2-950g--309202",
@@ -24,40 +29,49 @@ const urls = [
 const locations = [
     "Москва и область",
     "Санкт-Петербург и область",
-    "Владимирская обл.",
-    "Калужская обл.",
-    "Рязанская обл.",
-    "Тверская обл.",
-    "Тульская обл.",
+    "Владимирская обл",
+    "Калужская обл",
+    "Рязанская обл",
+    "Тверская обл",
+    "Тульская обл",
 ]
 
-function scrapeAll() {
-    urls.forEach(url => {
-        mkdir(url, err => {
-            if (err) throw err;
-        });
-        locations.forEach(location => {
-            mkdir(url + "/" + location, err => {
-                if (err) throw err;
+async function scrapeAll() {
+    async function createDir(url, isRecursive) {
+        if (!existsSync(url)) {
+            mkdirSync(url, {recursive: isRecursive});
+        }
+    }
+
+    for (const url of urls) {
+        let productUrl = url.split("/").slice(-1)[0];
+        await createDir(productUrl, false);
+
+        for (const location of locations) {
+            let pathArchive = productUrl + "/" + location;
+            await createDir(pathArchive, true);
+            await writeFileSync(pathArchive + "/" + PRODUCT_FILE_NAME, "", (err) => {
+                throw err;
+            })
+            await scrape(pathArchive, url, location).then((product) => {
+                let output =
+                    "price=" + product.price + "\n" +
+                    "priceOld=" + product.priceOld + "\n" +
+                    "rating=" + product.rating + "\n" +
+                    "reviewCount=" + product.reviewCount
+                appendTextFile(pathArchive + "/" + PRODUCT_FILE_NAME, output);
             });
-            scrape(url, location).then(() => {
-            });
-        })
-    });
+        }
+    }
 }
 
-writeFile(PRODUCT_FILE_NAME, "", (err) => {
-    if (err) {
-        console.error(err);
-    }
-});
-
 function appendTextFile(fileName, output) {
-    appendFile(fileName, output, (err) => {
+    appendFileSync(fileName, output, (err) => {
         if (err) {
             if (err) throw err;
         }
     });
 }
 
-scrapeAll.then();
+scrapeAll().then(() => {
+});

@@ -1,17 +1,14 @@
 const puppeteer = require('puppeteer');
-const {writeFile, appendFile, mkdir} = require("node:fs");
 
 const CLASS_NAME_LOCATION_CHOICE = '.Region_region__6OUBn';
 const CLASS_NAME_PRICE = '.PriceInfo_root__GX9Xp';
 const CLASS_NAME_PRODUCT_RATING = '.ActionsRow_stars__EKt42';
 const CLASS_NAME_PRODUCT_REVIEW_COUNT = '.ActionsRow_reviews__AfSj_';
 
-const PRODUCT_FILE_NAME = "product";
-
-const scrape = async (url, location) => {
+const scrape = async (pathArchive, url, location) => {
     let product = {
         price: "",
-        oldPrice: "",
+        priceOld: "",
         rating: "",
         reviewCount: "",
     };
@@ -45,7 +42,7 @@ const scrape = async (url, location) => {
     await scraping(page, CLASS_NAME_PRODUCT_REVIEW_COUNT).then((reviewCountAndSymbol) => {
         product.reviewCount = reviewCountAndSymbol.split(' ')[0];
     });
-    await page.screenshot({path: 'screenshot.jpg'});
+    await page.screenshot({path: `${pathArchive}/screenshot.jpg`});
 
     await browser.close();
 
