@@ -1,80 +1,63 @@
-const puppeteer = require('puppeteer');
-const {writeFile, appendFile} = require("node:fs");
+const {scrape} = require("./scrape");
+const {mkdir, appendFile, writeFile} = require("node:fs");
 
-const CLASS_NAME_LOCATION_CHOICE = '.Region_region__6OUBn';
-const CLASS_NAME_PRICE = '.PriceInfo_root__GX9Xp';
-const CLASS_NAME_PRODUCT_RATING = '.ActionsRow_stars__EKt42';
-const CLASS_NAME_PRODUCT_REVIEW_COUNT = '.ActionsRow_reviews__AfSj_';
+const PRODUCT_FILE_NAME = "product";
 
-const PRODUCT_FILE_NAME = "product.txt";
+const urls = [
+    "https://www.vprok.ru/product/domik-v-derevne-dom-v-der-moloko-ster-3-2-950g--309202",
+    "https://www.vprok.ru/product/domik-v-derevne-dom-v-der-moloko-ster-2-5-950g--310778",
+    "https://www.vprok.ru/product/makfa-makfa-izd-mak-spirali-450g--306739",
+    "https://www.vprok.ru/product/greenfield-greenf-chay-gold-ceyl-bl-pak-100h2g--307403",
+    "https://www.vprok.ru/product/chaykofskiy-chaykofskiy-sahar-pesok-krist-900g--308737",
+    "https://www.vprok.ru/product/lavazza-kofe-lavazza-1kg-oro-zerno--450647",
+    "https://www.vprok.ru/product/parmalat-parmal-moloko-pit-ulster-3-5-1l--306634",
+    "https://www.vprok.ru/product/perekrestok-spmi-svinina-duhovaya-1kg--1131362",
+    "https://www.vprok.ru/product/vinograd-kish-mish-1-kg--314623",
+    "https://www.vprok.ru/product/eko-kultura-tomaty-cherri-konfetto-250g--946756",
+    "https://www.vprok.ru/product/bio-perets-ramiro-1kg--476548",
+    "https://www.vprok.ru/product/korkunov-kollektsiya-shokoladnyh-konfet-korkunov-iz-molochnogo-shokolada-s-fundukom-karamelizirovannym-gretskim-orehom-vafley-svetloy-orehovoy--1295690",
+    "https://www.vprok.ru/product/picnic-picnic-batonchik-big-76g--311996",
+    "https://www.vprok.ru/product/ritter-sport-rit-sport-shokol-tsel-les-oreh-mol-100g--305088",
+    "https://www.vprok.ru/product/lays-chipsy-kartofelnye-lays-smetana-luk-140g--1197579"
+]
+
+const locations = [
+    "Москва и область",
+    "Санкт-Петербург и область",
+    "Владимирская обл.",
+    "Калужская обл.",
+    "Рязанская обл.",
+    "Тверская обл.",
+    "Тульская обл.",
+]
+
+function scrapeAll() {
+    urls.forEach(url => {
+        mkdir(url, err => {
+            if (err) throw err;
+        });
+        locations.forEach(location => {
+            mkdir(url + "/" + location, err => {
+                if (err) throw err;
+            });
+            scrape(url, location).then(() => {
+            });
+        })
+    });
+}
+
 writeFile(PRODUCT_FILE_NAME, "", (err) => {
     if (err) {
         console.error(err);
     }
 });
 
-const url = process.argv[2];
-const location = process.argv[3];
-
-let scrape = async () => {
-    const browser = await puppeteer.launch({
-        headless: false,
-        args: ['--window-size=1920, 1080'],
-    });
-    const page = await browser.newPage();
-    await page.setViewport({
-        width: 1920,
-        height: 1080,
-    });
-    await page.goto(url, {waitUntil: "domcontentloaded"});
-
-    // возможно костыль на задержку,
-    // но почитав мануал и комментарии к проблеме с начальной многократной перезагрузкой страницы,
-    // не нашел другого 100% способа получения данных
-    await sleep(5000);
-    await clickByClassName(page, CLASS_NAME_LOCATION_CHOICE);
-    await clickByText(page, location);
-    await sleep(2000);
-    await scraping(page, CLASS_NAME_PRICE).then((parsingString) => {
-        let [priceOld, price] = parsingString.split(' ').filter(item => !isNaN(parseFloat(item.replace(',', '.'))));
-        appendTextFile(PRODUCT_FILE_NAME, `price=${price}\n`);
-        appendTextFile(PRODUCT_FILE_NAME, `priceOld=${priceOld}\n`);
-    });
-    await scraping(page, CLASS_NAME_PRODUCT_RATING).then((rating) => {
-        appendTextFile(PRODUCT_FILE_NAME, `rating=${rating}\n`);
-    });
-    await scraping(page, CLASS_NAME_PRODUCT_REVIEW_COUNT).then((reviewCountAndSymbol) => {
-        let reviewCount = reviewCountAndSymbol.split(' ')[0];
-        appendTextFile(PRODUCT_FILE_NAME, `reviewCount=${reviewCount}`);
-    });
-    await page.screenshot({path: 'screenshot.jpg'});
-
-    await browser.close();
-};
-
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-async function clickByClassName(page, classNameLocationChoice) {
-    let el = await page.waitForSelector(classNameLocationChoice);
-    await el.click();
-}
-
-async function clickByText(page, text) {
-    let el = await page.waitForSelector(`text/${text}`);
-    await el.click();
-}
-
-async function scraping(page, className) {
-    return await page.$eval(className, el => el.textContent);
-}
-
 function appendTextFile(fileName, output) {
     appendFile(fileName, output, (err) => {
         if (err) {
-            console.error(err);
+            if (err) throw err;
         }
     });
 }
 
-scrape().then(() => {
-});
+scrapeAll.then();
