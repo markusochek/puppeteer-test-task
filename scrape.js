@@ -32,15 +32,30 @@ const scrape = async (pathArchive, url, location) => {
     await clickByText(page, location);
     await sleep(2000);
     await scraping(page, CLASS_NAME_PRICE).then((parsingString) => {
-        let [priceOld, price] = parsingString.split(' ').filter(item => !isNaN(parseFloat(item.replace(',', '.'))));
-        product.price = price;
-        product.priceOld = priceOld;
+        let prices = parsingString?.split(' ').filter(item => !isNaN(parseFloat(item.replace(',', '.'))));
+        if (prices) {
+            let [priceOld, price] = prices;
+
+            if (price?.includes('\xa0')) {
+                price = price.replace('\xa0', '');
+            }
+            if (priceOld?.includes('\xa0')) {
+                priceOld = priceOld.replace('\xa0', '');
+            }
+
+            product.price = (price) ? price: null;
+            product.priceOld = (priceOld) ? priceOld: null;
+        } else {
+            product.price = null;
+            product.priceOld = null;
+        }
     });
     await scraping(page, CLASS_NAME_PRODUCT_RATING).then((rating) => {
-        product.rating = rating;
+        product.rating = (rating) ? rating: null;
     });
     await scraping(page, CLASS_NAME_PRODUCT_REVIEW_COUNT).then((reviewCountAndSymbol) => {
-        product.reviewCount = reviewCountAndSymbol.split(' ')[0];
+        let reviewCount = reviewCountAndSymbol?.split(' ')[0];
+        product.reviewCount = (reviewCount) ? reviewCount: null;
     });
     await page.screenshot({path: `${pathArchive}/screenshot.jpg`});
 
@@ -52,17 +67,31 @@ const scrape = async (pathArchive, url, location) => {
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function clickByClassName(page, classNameLocationChoice) {
+    try {
     let el = await page.waitForSelector(classNameLocationChoice);
     await el.click();
+    } catch (e) {
+        console.log(e);
+    }
 }
 
 async function clickByText(page, text) {
-    let el = await page.waitForSelector(`text/${text}`);
-    await el.click();
+    try {
+        let el = await page.waitForSelector(`text/${text}`);
+        await el.click();
+    } catch (e) {
+        console.log(e);
+    }
 }
 
 async function scraping(page, className) {
-    return await page.$eval(className, el => el.textContent);
+    try {
+        let el = await page.waitForSelector(className, {timeout: 5000});
+        return await el.evaluate(el => el.textContent);
+    } catch (e) {
+        console.log(`element by ${className} was not found on page`);
+        return null;
+    }
 }
 
 module.exports = {scrape};
